@@ -29,18 +29,13 @@ const bookingSchema = new Schema<IBooking>(
 );
 
 // Pre-save hook to validate if the referenced Event exists in the database
-bookingSchema.pre('save', async function (next) {
+bookingSchema.pre('save', async function () {
   if (this.isModified('eventId')) {
-    try {
-      const eventExists = await Event.findById(this.eventId);
-      if (!eventExists) {
-        return next(new Error(`Validation Error: Event with ID ${this.eventId} does not exist.`));
-      }
-    } catch (error: any) {
-      return next(error);
+    const eventExists = await Event.findById(this.eventId);
+    if (!eventExists) {
+      throw new Error(`Validation Error: Event with ID ${this.eventId} does not exist.`);
     }
   }
-  next();
 });
 
 // Cache model to prevent OverwriteModelError during Next.js hot-reloads
