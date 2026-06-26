@@ -13,6 +13,7 @@ export interface IEvent extends Document {
   mode: string;
   audience: string;
   agenda: string[];
+  tags: string[];
   organizer: string;
   createdAt: Date;
   updatedAt: Date;
@@ -32,13 +33,13 @@ const eventSchema = new Schema<IEvent>(
     mode: { type: String, required: true },
     audience: { type: String, required: true },
     agenda: { type: [String], required: true },
-    organizer: { type: String, required: true },
-  },
+    tags: { type: [String], required: true },
+    organizer: { type: String, required: true },  },
   { timestamps: true } // Auto-generates createdAt and updatedAt
 );
 
 // Pre-save hook for auto-generating slug and normalizing date/time
-eventSchema.pre('save', function (next) {
+eventSchema.pre('save', function () {
   // Generate a URL-friendly slug if the title is modified
   if (this.isModified('title')) {
     this.slug = this.title
@@ -53,7 +54,7 @@ eventSchema.pre('save', function (next) {
   if (this.isModified('date')) {
     const parsedDate = new Date(this.date);
     if (isNaN(parsedDate.getTime())) {
-      return next(new Error('Invalid date format provided for Event.'));
+      throw new Error('Invalid date format provided for Event.');
     }
     this.date = parsedDate.toISOString();
   }
@@ -62,9 +63,8 @@ eventSchema.pre('save', function (next) {
   if (this.isModified('time')) {
     this.time = this.time.trim().toUpperCase();
   }
-
-  next();
 });
 
-// Cache model to prevent OverwriteModelError during Next.js hot-reloads
-export const Event: Model<IEvent> = mongoose.models.Event || mongoose.model<IEvent>('Event', eventSchema);
+// Force model recompilation to fix Next.js caching issues
+delete mongoose.models.Event;
+export const Event: Model<IEvent> = mongoose.model<IEvent>('Event', eventSchema);
