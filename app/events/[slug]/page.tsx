@@ -1,5 +1,6 @@
  import {notFound} from "next/navigation"
  import Image from "next/image";
+ import { unstable_cacheLife as cacheLife } from "next/cache";
  import BookEvent from "@/components/BookEvent";
  import { getSimilarEventsBySlug, getEventBySlug } from "@/lib/actions/event.actions";
 import { IEvent } from "@/database";
@@ -42,8 +43,9 @@ const EventTags = ({tags}: {tags: string[]}) => {
   );
 }
 
-const EventDetailsPage = async ({params} : {params: Promise<{slug: string}>}) => {
-  const {slug} = await params;
+import { Suspense } from "react";
+
+const EventDetailsContent = async ({ slug }: { slug: string }) => {
   const event = await getEventBySlug(slug);
   
   if(!event || !event.description){
@@ -51,13 +53,8 @@ const EventDetailsPage = async ({params} : {params: Promise<{slug: string}>}) =>
   }
   
   const {description, image, overview, date,time, location, mode, agenda,audience, organizer, tags} = event;
-
-
-
   const bookings = 10;
-
-   const similarEvents = await getSimilarEventsBySlug(slug);
-
+  const similarEvents = await getSimilarEventsBySlug(slug);
 
   return (
     <section id="event">
@@ -116,7 +113,7 @@ const EventDetailsPage = async ({params} : {params: Promise<{slug: string}>}) =>
           ): (
             <p className="text-sm">Be the first one to book your spot</p>
           )}
-          <BookEvent />
+          <BookEvent eventId={event._id.toString()} slug={event.slug} />
         </div>
         
       </aside>
@@ -136,6 +133,15 @@ const EventDetailsPage = async ({params} : {params: Promise<{slug: string}>}) =>
             
     </section>
   )
+}
+
+const EventDetailsPage = async ({params} : {params: Promise<{slug: string}>}) => {
+  const {slug} = await params;
+  return (
+    <Suspense fallback={<div>Loading event details...</div>}>
+      <EventDetailsContent slug={slug} />
+    </Suspense>
+  );
 }
 
 export default EventDetailsPage;
