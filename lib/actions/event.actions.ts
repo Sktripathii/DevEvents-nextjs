@@ -3,6 +3,17 @@
 import { Event } from '@/database/event.model';
 import connectToDatabase from '../mongodb';
 
+export const getAllEvents = async () => {
+    try {
+        await connectToDatabase();
+        const events = await Event.find().lean();
+        return JSON.parse(JSON.stringify(events));
+    } catch (error) {
+        console.error("Failed to fetch events:", error);
+        return [];
+    }
+}
+
 export const getEventBySlug = async (slug: string) => {
     try {
         await connectToDatabase();
